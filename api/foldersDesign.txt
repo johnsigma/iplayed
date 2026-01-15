@@ -1,0 +1,23 @@
+iplayed/api/
+├── src/
+│   ├── @types/            # Definições de tipos TS (ex: Express, Request)
+│   ├── shared/            # Tudo que é compartilhado entre módulos
+│   │   ├── infra/         # Detalhes de implementação externa
+│   │   │   ├── database/  # O SEU ARQUIVO DB (Conexão/Pool) e Migrations
+│   │   │   └── http/      # Configuração do Express, Middlewares globais
+│   │   ├── errors/        # Classes de erro customizadas (AppError)
+│   │   └── utils/         # Funções auxiliares (ex: formatador de imagens)
+│   ├── modules/           # O coração da aplicação (Regras de Negócio)
+│   │   ├── games/
+│   │   │   ├── dtos/      # Tipagem para entrada/saída de dados
+│   │   │   ├── infra/     # SQL específico (Repositories) e Rotas
+│   │   │   └── services/  # Lógica: Integração IGDB, Regras de Cache
+│   │   └── reviews/
+│   │       └── ...
+│   └── server.ts          # Arquivo de entrada (Bootstrap da aplicação)
+├── tests/                 # Testes de Integração (E2E)
+│   ├── mocks/             # Dados falsos para testes
+│   └── modules/           # Testes espelhados na estrutura do src
+├── .env                   # Variáveis sensíveis
+├── docker-compose.yml     # Orquestração do Postgres
+└── tsconfig.json          # Configuração do compilador
