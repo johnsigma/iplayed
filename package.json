@@ -1,0 +1,30 @@
+{
+  "name": "iplayed",
+  "version": "1.0.0",
+  "description": "O **iPlayed** nasce da união de duas grandes paixões: o desenvolvimento de software e o universo dos jogos. Mais do que um simples rastreador, o projeto é um estudo prático de como construir uma aplicação robusta, escalável e tecnicamente rica, focada em quem realmente se importa com os detalhes de cada game jogado.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "ts-node-dev --inspect --transpile-only --ignore-watch node_modules src/server.ts",
+    "build": "tsc",
+    "lint:check": "prettier --check .",
+    "lint:fix": "prettier --write ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johnsigma/iplayed.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/johnsigma/iplayed/issues"
+  },
+  "homepage": "https://github.com/johnsigma/iplayed#readme",
+  "devDependencies": {
+    "@types/node": "^25.0.9",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3"
+  }
+}
