@@ -24,6 +24,7 @@
   "homepage": "https://github.com/johnsigma/iplayed#readme",
   "devDependencies": {
     "@types/node": "^25.0.9",
+    "prettier": "^3.8.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
   }

@@ -1,44 +1,26 @@
 {
-  // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
-    // File Layout
-    "rootDir": "./src",
-    "outDir": "./dist",
+    /* Projeto e Saída */
+    "target": "ES2022" /* Node 20 suporta ES2022 nativamente */,
+    "module": "CommonJS" /* Padrão robusto para o ecossistema Express */,
+    "rootDir": "./src" /* Onde seu código fonte mora */,
+    "outDir": "./dist" /* Onde o código compilado será jogado */,
+    "removeComments": true /* Limpa o código final */,
 
-    // Environment Settings
-    // See also https://aka.ms/tsconfig/module
-    "module": "nodenext",
-    "target": "esnext",
-    "types": [],
-    // For nodejs:
-    // "lib": ["esnext"],
-    // "types": ["node"],
-    // and npm install -D @types/node
+    /* Rigor Técnico (Nível Profissional) */
+    "strict": true /* Ativa todas as checagens de segurança */,
+    "noImplicitAny": true /* Proíbe o uso de 'any' sem intenção */,
+    "strictNullChecks": true /* Evita o erro 'cannot read property of null' */,
+    "forceConsistentCasingInFileNames": true /* Evita erros entre Windows e Linux */,
 
-    // Other Outputs
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-
-    // Stricter Typechecking Options
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-
-    // Style Options
-    // "noImplicitReturns": true,
-    // "noImplicitOverride": true,
-    // "noUnusedLocals": true,
-    // "noUnusedParameters": true,
-    // "noFallthroughCasesInSwitch": true,
-    // "noPropertyAccessFromIndexSignature": true,
-
-    // Recommended Options
-    "strict": true,
-    "jsx": "react-jsx",
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force",
-    "skipLibCheck": true
-  }
+    /* Interoperabilidade e Performance */
+    "esModuleInterop": true /* Permite importar bibliotecas CommonJS como se fossem ES Modules */,
+    "skipLibCheck": true /* Acelera a compilação pulando checagem de tipos de bibliotecas */,
+    "resolveJsonModule": true /* Permite importar arquivos .json (útil para configs) */
+  },
+  "include": ["src/**/*"] /* Compila tudo dentro da src */,
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts"
+  ] /* Ignora bibliotecas e arquivos de teste no build */
 }
