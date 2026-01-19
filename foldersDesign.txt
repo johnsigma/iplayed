@@ -16,8 +16,9 @@ iplayed/api/
 │   │       └── ...
 │   └── server.ts          # Arquivo de entrada (Bootstrap da aplicação)
 ├── tests/                 # Testes de Integração (E2E)
-│   ├── mocks/             # Dados falsos para testes
-│   └── modules/           # Testes espelhados na estrutura do src
+│   ├── unit/          # Testes de lógica isolada (Services)
+│   ├── integration/   # Testes que tocam o banco ou rotas (E2E/API)
+│   └── mocks/         # Dados falsos para simular retornos
 ├── .env                   # Variáveis sensíveis
 ├── docker-compose.yml     # Orquestração do Postgres
 └── tsconfig.json          # Configuração do compilador
