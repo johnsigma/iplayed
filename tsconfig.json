@@ -6,6 +6,7 @@
     "rootDir": "./src" /* Onde seu código fonte mora */,
     "outDir": "./dist" /* Onde o código compilado será jogado */,
     "removeComments": true /* Limpa o código final */,
+    "baseUrl": "./src",
 
     /* Rigor Técnico (Nível Profissional) */
     "strict": true /* Ativa todas as checagens de segurança */,
