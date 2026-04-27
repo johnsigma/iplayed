@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/johnsigma/iplayed#readme",
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.0.9",
     "@types/pg": "^8.16.0",
@@ -47,6 +48,8 @@
   "dependencies": {
     "dotenv": "^17.2.3",
     "dotenv-expand": "^13.0.0",
+    "express": "^4.22.1",
+    "express-async-errors": "^3.1.1",
     "pg": "^8.17.2"
   }
 }
