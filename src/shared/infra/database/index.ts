@@ -1,5 +1,10 @@
 import { Pool } from 'pg';
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import { expand } from 'dotenv-expand';
+
+expand(
+  dotenv.config({ path: `.env.${process.env.NODE_ENV ?? 'development'}` }),
+);
 
 const pool = new Pool({
   user: process.env.POSTGRES_USER,
