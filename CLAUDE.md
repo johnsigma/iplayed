@@ -33,6 +33,15 @@
 - Validação de entrada sempre com Zod
 - Variáveis de ambiente para todas as credenciais e chaves de API
 
+## Testes
+
+- Cobertura de 100% é o objetivo — tudo que puder ser testado, deve ser
+- O usuário está aprendendo sobre testes, então sempre explicar o que está sendo testado e por quê
+- Usar Jest + Supertest (já configurados)
+- Testes de integração devem usar banco real (não mocks do banco) — mocks mascaram divergências entre o código e o banco real
+- Criar testes junto com cada feature, nunca deixar para depois
+- Sempre avisar quando uma feature nova exige novos testes ou quando testes existentes precisam ser atualizados
+
 ## Gestão de tarefas
 
 O projeto usa Milestones e Tasks no GitHub (não sprints).
