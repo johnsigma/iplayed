@@ -1,30 +1,13 @@
 # iPlayed — CLAUDE.md
 
-> Para descrição completa do projeto, leia o README.md.
+> Para descrição do projeto, stack e como rodar, leia o README.md.
 
-## Stack
+## Estado atual
 
-- Runtime: Node.js + TypeScript
-- Banco: PostgreSQL com SQL nativo (node-postgres) — sem ORM
-- Validação: Zod
-- Infraestrutura: Docker / docker-compose
-- Integração externa: IGDB API (Twitch)
-- Autenticação (futuro): JWT
+- Milestone atual: **1 — Fundação e Infraestrutura**
+- Para o estado fino das issues abertas/fechadas, use `gh issue list` — é a fonte da verdade.
 
-## Estado atual do projeto
-
-- Milestone 1 (Infraestrutura) em andamento
-- Docker e banco configurados
-- Próximos passos: integração IGDB e lógica de persistência
-
-> **Nota sobre esta seção:** Atualizar apenas ao mudar de milestone ou surgir decisão arquitetural relevante.
-> Para o estado fino das issues (o que está aberto/fechado), consultar o GitHub via `gh` — ele é a fonte da verdade.
-
-## Comandos importantes
-
-- `docker-compose up -d` — sobe o banco
-- `npm install` — instala dependências
-- `npm run dev` — inicia o servidor (confirmar quando configurado)
+> Atualize esta seção apenas ao mudar de milestone ou surgir decisão arquitetural relevante.
 
 ## Convenções de código
 
@@ -32,6 +15,15 @@
 - SQL nativo sempre — nunca sugerir ORM ou query builder
 - Validação de entrada sempre com Zod
 - Variáveis de ambiente para todas as credenciais e chaves de API
+- Path aliases configurados: `@shared/*` e `@modules/*`
+- Dois tsconfig: `tsconfig.json` (IDE/type-check) e `tsconfig.build.json` (build de produção)
+
+## Migrations
+
+- Migrations são imutáveis depois de commitadas — nunca editar uma migration que já foi rodada e enviada ao repositório
+- Mudanças de schema vêm sempre via nova migration
+- Toda migration precisa de `up` e `down` funcionais
+- Após criar uma migration, aplicar nos dois bancos: `npm run migrate:up` e `npm run migrate:up:test`
 
 ## Testes
 
@@ -39,6 +31,8 @@
 - O usuário está aprendendo sobre testes, então sempre explicar o que está sendo testado e por quê
 - Usar Jest + Supertest (já configurados)
 - Testes de integração devem usar banco real (não mocks do banco) — mocks mascaram divergências entre o código e o banco real
+- Banco de testes isolado em container separado (porta 5434), gerenciado via `npm run migrate:up:test`
+- Dados de seed (`criteria`) são imutáveis nos testes; `platforms` é tabela dinâmica e é truncada entre testes
 - Criar testes junto com cada feature, nunca deixar para depois
 - Sempre avisar quando uma feature nova exige novos testes ou quando testes existentes precisam ser atualizados
 
@@ -68,7 +62,8 @@ Antes de iniciar qualquer task, você deve:
 ## Avaliação de complexidade
 
 Antes de iniciar qualquer tarefa, avalie a complexidade.
-Se envolver qualquer item abaixo, PARE e avise:
+
+**Se envolver qualquer item abaixo, PARE e avise:**
 "⚠️ Esta tarefa pode se beneficiar do Opus. Deseja trocar o modelo?"
 
 Critérios para usar o Opus:
@@ -79,3 +74,9 @@ Critérios para usar o Opus:
 - Debugging de problema sem causa clara
 - Design patterns complexos
 - Qualquer tarefa com raciocínio em múltiplas etapas interdependentes
+
+**Quando o Opus já estiver em uso**, ao iniciar uma nova tarefa, reavalie. Se a nova tarefa não atingir nenhum dos critérios acima, sugira voltar ao Sonnet:
+
+"⚠️ Esta próxima tarefa não tem complexidade que se beneficie do Opus. Sugiro trocar para o Sonnet com `/model sonnet`."
+
+**Não interromper fluxo:** se você está no meio de uma tarefa complexa em andamento (mesmo que a sub-etapa atual pareça simples), não sugerir a troca — espere a tarefa atual terminar.
