@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
+import { AppError } from '@shared/errors/AppError';
 
 export function errorHandler(
   err: Error,
@@ -15,6 +16,14 @@ export function errorHandler(
         field: issue.path.join('.'),
         message: issue.message,
       })),
+    });
+    return;
+  }
+
+  if (err instanceof AppError) {
+    res.status(err.statusCode).json({
+      status: 'error',
+      message: err.message,
     });
     return;
   }
