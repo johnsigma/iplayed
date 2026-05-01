@@ -4,6 +4,10 @@ const config: Config = {
   // Diz ao Jest para usar o ts-jest para arquivos .ts
   preset: 'ts-jest',
 
+  // Configurações globais para o ambiente de teste
+  globalSetup: '<rootDir>/tests/setup/globalSetup.ts',
+  globalTeardown: '<rootDir>/tests/setup/globalTeardown.ts',
+
   // Define o ambiente de execução (Node.js para APIs)
   testEnvironment: 'node',
 
@@ -17,15 +21,14 @@ const config: Config = {
   clearMocks: true,
 
   // Coleta cobertura de código (útil para ver o que ainda não foi testado)
-  collectCoverage: true,
   collectCoverageFrom: ['src/**/*.ts', '!src/@types/**', '!src/server.ts'],
   coverageDirectory: 'coverage',
   coverageProvider: 'v8',
 
   // Mapeamento de caminhos (caso você use caminhos customizados no tsconfig)
   moduleNameMapper: {
-    '@modules/(.*)': '<rootDir>/src/modules/$1',
-    '@shared/(.*)': '<rootDir>/src/shared/$1',
+    '^@shared/(.*)$': '<rootDir>/src/shared/$1',
+    '^@modules/(.*)$': '<rootDir>/src/modules/$1',
   },
 };
 

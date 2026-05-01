@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "tsc --project tsconfig.build.json",
     "type-check": "tsc --noEmit",
     "db:setup": "tsx src/shared/infra/database/setup.ts",
     "lint:check": "prettier --check .",
@@ -13,9 +13,11 @@
     "test": "jest --runInBand",
     "test:watch": "jest --watchAll --runInBand",
     "test:coverage": "jest --coverage",
+    "migrate:create": "node-pg-migrate create --migrations-dir src/shared/infra/database/migrations -j ts",
     "migrate:up": "dotenv -e .env.development -- node-pg-migrate up --migrations-dir src/shared/infra/database/migrations --tsx -j ts",
     "migrate:down": "dotenv -e .env.development -- node-pg-migrate down --migrations-dir src/shared/infra/database/migrations --tsx -j ts",
-    "migrate:create": "node-pg-migrate create --migrations-dir src/shared/infra/database/migrations -j ts"
+    "migrate:up:test": "dotenv -e .env.test -- node-pg-migrate up --migrations-dir src/shared/infra/database/migrations --tsx -j ts",
+    "migrate:down:test": "dotenv -e .env.test -- node-pg-migrate down --migrations-dir src/shared/infra/database/migrations --tsx -j ts"
   },
   "repository": {
     "type": "git",
@@ -32,7 +34,7 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.0.9",
+    "@types/node": "^25.6.0",
     "@types/pg": "^8.16.0",
     "@types/supertest": "^6.0.3",
     "dotenv-cli": "^11.0.0",

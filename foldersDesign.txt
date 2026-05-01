@@ -16,6 +16,8 @@ iplayed/api/
 │   │       └── ...
 │   └── server.ts          # Arquivo de entrada (Bootstrap da aplicação)
 ├── tests/                 # Testes de Integração (E2E)
+│   ├── helpers        # funções auxiliares para os testes
+│   ├── setup/         # Configurações globais de testes
 │   ├── unit/          # Testes de lógica isolada (Services)
 │   ├── integration/   # Testes que tocam o banco ou rotas (E2E/API)
 │   └── mocks/         # Dados falsos para simular retornos
