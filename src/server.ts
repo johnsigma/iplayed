@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { app } from 'shared/infra/http/app';
+import { app } from '@shared/infra/http/app';
 
 const PORT = process.env.PORT || 3000;
 

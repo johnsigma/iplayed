@@ -5,6 +5,7 @@ iplayed/api/
 │   │   ├── infra/         # Detalhes de implementação externa
 │   │   │   ├── database/  # O SEU ARQUIVO DB (Conexão/Pool) e Migrations
 │   │   │   └── http/      # Configuração do Express, Middlewares globais
+│   │   │       └── middlewares/ # Pasta para os middlewares
 │   │   ├── errors/        # Classes de erro customizadas (AppError)
 │   │   └── utils/         # Funções auxiliares (ex: formatador de imagens)
 │   ├── modules/           # O coração da aplicação (Regras de Negócio)
