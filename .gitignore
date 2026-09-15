@@ -39,3 +39,6 @@ Thumbs.db
 
 # Test coverage reports
 coverage/
+
+# Postman collection export
+igdb.postman_collection.json
