@@ -14,21 +14,25 @@ const pool = new Pool({
   port: Number(process.env.POSTGRES_PORT),
 });
 
-// Listener para erros inesperados no cliente do banco (evita crash da aplicação)
-pool.on('error', (err, client) => {
-  console.error('Erro inesperado no cliente do PostgreSQL', err);
-  process.exit(-1);
+// Listener para erros inesperados em clientes ociosos do pool (ex: o Postgres
+// derruba uma conexão parada). Sem esse listener, o Node trataria isso como
+// um evento 'error' sem handler e derrubaria o processo sozinho — mas
+// chamar `process.exit` aqui era pior do que o problema que evitava: uma
+// soluço passageira de rede derrubava a aplicação inteira, não só a conexão
+// afetada. Só logamos; o pool cria uma conexão nova quando precisar.
+pool.on('error', (err) => {
+  console.error('Erro inesperado em um cliente ocioso do PostgreSQL:', err);
 });
 
 // Teste rápido de conexão (Opcional, mas bom para debug inicial)
-pool.connect((err) => {
+pool.connect((err, client, release) => {
   if (err) {
-    console.log(process.env.POSTGRES_HOST);
-    console.log(process.env.POSTGRES_PASSWORD);
     console.error('❌ Erro ao conectar no Banco de Dados:', err.message);
-  } else {
-    console.log('✅ Conectado ao Banco de Dados com sucesso!');
+    return;
   }
+
+  console.log('✅ Conectado ao Banco de Dados com sucesso!');
+  release(); // Devolve o client ao pool — sem isso, cada import vazava uma conexão
 });
 
 export { pool };
