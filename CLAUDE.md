@@ -58,6 +58,13 @@ Antes de iniciar qualquer task, você deve:
    - Se existe algo nas tasks futuras que vale antecipar
 4. Só então perguntar se deve avançar
 
+## Decisões técnicas
+
+- Nunca apresentar uma escolha como menu cru. Antes de pedir uma decisão, explicar: qual é o problema por trás dela, o que cada alternativa significa na prática (com exemplo de código quando ajudar), e quais argumentos existem a favor de cada uma
+- Dizer explicitamente quais argumentos clássicos a favor de uma alternativa **não se aplicam a este projeto**, e por quê
+- Sempre declarar qual é a recomendação, o raciocínio que leva a ela, e o que faria mudar de ideia
+- O objetivo é o usuário escolher entendendo o trade-off — nunca por confiança cega na recomendação
+
 ## Avisos e sinalizações
 
 - **GitHub — issues/milestones:** Sempre avisar quando uma nova issue ou milestone dever ser criada no GitHub para rastrear trabalho em andamento ou planejado
