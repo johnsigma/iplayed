@@ -47,17 +47,14 @@ export class UpsertGameService {
     return withTransaction(async (client) => {
       // A ordem importa: `game_platforms` tem FK para as outras duas tabelas,
       // então plataformas e jogo precisam existir antes do vínculo.
-      await this.insertPlatforms(client, igdbGame);
+      await this.insertPlatforms(client, igdbGame.platforms);
       await this.insertGame(client, igdbGame);
       await this.insertGamePlatforms(client, igdbGame);
 
       const persisted = await this.findGame(client, igdbGame.id);
 
       if (!persisted) {
-        throw new AppError(
-          `Game ${igdbGame.id} could not be persisted`,
-          500,
-        );
+        throw new AppError(`Game ${igdbGame.id} could not be persisted`, 500);
       }
 
       return persisted;
@@ -81,21 +78,25 @@ export class UpsertGameService {
   // chave duplicada. O mesmo vale para os dois inserts seguintes.
   private async insertPlatforms(
     client: PoolClient,
-    game: IgdbGame,
+    platforms: IgdbGame['platforms'],
   ): Promise<void> {
-    if (game.platforms.length === 0) return;
+    if (platforms.length === 0) return;
+
+    const rows = platforms.map((platform) => ({
+      id_igdb: platform.id,
+      name: platform.name,
+      slug: platform.slug,
+    }));
 
     await client.query({
       text: `
         INSERT INTO platforms (id_igdb, name, slug)
-        SELECT * FROM UNNEST($1::int[], $2::varchar[], $3::varchar[])
+        SELECT id_igdb, name, slug
+          FROM json_to_recordset($1::json)
+            AS platform(id_igdb int, name varchar, slug varchar)
         ON CONFLICT (id_igdb) DO NOTHING;
       `,
-      values: [
-        game.platforms.map((platform) => platform.id),
-        game.platforms.map((platform) => platform.name),
-        game.platforms.map((platform) => platform.slug),
-      ],
+      values: [JSON.stringify(rows)],
     });
   }
 
@@ -127,22 +128,24 @@ export class UpsertGameService {
 
     const releaseDates = this.earliestDateByPlatform(game);
 
+    // A lista de plataformas é a fonte da verdade, não a de datas: uma entrada
+    // de release_date pode apontar para uma plataforma que foi descartada por
+    // não ter slug, e inserir esse vínculo violaria a FK.
+    const rows = game.platforms.map((platform) => ({
+      game_id: game.id,
+      platform_id: platform.id,
+      release_date: releaseDates.get(platform.id) ?? null,
+    }));
+
     await client.query({
       text: `
         INSERT INTO game_platforms (game_id, platform_id, release_date)
-        SELECT * FROM UNNEST($1::int[], $2::int[], $3::timestamp[])
+        SELECT game_id, platform_id, release_date
+          FROM json_to_recordset($1::json)
+            AS link(game_id int, platform_id int, release_date timestamp)
         ON CONFLICT (game_id, platform_id) DO NOTHING;
       `,
-      values: [
-        game.platforms.map(() => game.id),
-        game.platforms.map((platform) => platform.id),
-        // A lista de plataformas é a fonte da verdade, não a de datas: uma
-        // entrada de release_date pode apontar para uma plataforma que foi
-        // descartada por não ter slug, e inserir esse vínculo violaria a FK.
-        game.platforms.map(
-          (platform) => releaseDates.get(platform.id) ?? null,
-        ),
-      ],
+      values: [JSON.stringify(rows)],
     });
   }
 
