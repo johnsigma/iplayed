@@ -7,7 +7,6 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc --project tsconfig.build.json",
     "type-check": "tsc --noEmit",
-    "db:setup": "tsx src/shared/infra/database/setup.ts",
     "lint:check": "prettier --check .",
     "lint:fix": "prettier --write .",
     "test": "jest --runInBand",
