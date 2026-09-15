@@ -1,7 +1,7 @@
 import { http, HttpResponse, JsonBodyType } from 'msw';
 import { pool } from '@shared/infra/database';
 import { UpsertGameService } from '@modules/games/services/UpsertGameService';
-import { clearDatabase } from '@tests/helpers/database';
+import { clearDatabase, closeDatabase } from '@tests/helpers/database';
 import { server } from '@tests/helpers/msw/server';
 
 // Payload no formato bruto da IGDB — é o que o MSW devolve e o que o
@@ -48,7 +48,10 @@ async function releaseDateOf(platformId: number): Promise<string | null> {
 describe('UpsertGameService (integração)', () => {
   beforeAll(() => server.listen());
   afterEach(() => server.resetHandlers());
-  afterAll(() => server.close());
+  afterAll(async () => {
+    server.close();
+    await closeDatabase();
+  });
 
   beforeEach(async () => {
     await clearDatabase();

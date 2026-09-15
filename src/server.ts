@@ -1,9 +1,14 @@
 import 'dotenv/config';
 import { app } from '@shared/infra/http/app';
+import { checkDatabaseConnection } from '@shared/infra/database';
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📡 Endpoint: http://localhost:${PORT}/api/v1/status`);
+
+  // Feedback de conectividade no boot. Fica aqui, e não no módulo de banco,
+  // para que importar o pool não abra conexão por conta própria.
+  await checkDatabaseConnection();
 });

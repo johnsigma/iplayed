@@ -1,10 +1,12 @@
 import { pool } from '@shared/infra/database';
-import { clearDatabase } from '../../helpers/database';
+import { clearDatabase, closeDatabase } from '@tests/helpers/database';
 
 describe('Database Triggers', () => {
   beforeEach(async () => {
     await clearDatabase();
   });
+
+  afterAll(closeDatabase);
 
   it('should set updated_at when a user row is updated', async () => {
     const insertResult = await pool.query(`

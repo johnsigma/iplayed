@@ -24,15 +24,26 @@ pool.on('error', (err) => {
   console.error('Erro inesperado em um cliente ocioso do PostgreSQL:', err);
 });
 
-// Teste rápido de conexão (Opcional, mas bom para debug inicial)
-pool.connect((err, client, release) => {
-  if (err) {
-    console.error('❌ Erro ao conectar no Banco de Dados:', err.message);
-    return;
+/**
+ * Verificação de conectividade para o boot da aplicação.
+ *
+ * Isto é uma função exportada, e não código no topo do módulo, de propósito:
+ * enquanto rodava no import, qualquer arquivo que importasse o `pool` abria
+ * uma conexão sem pedir — inclusive o teardown dos testes, que importa o
+ * módulo só para fechar o pool. O `end()` competia com esse `connect()` em
+ * andamento e deixava um handle aberto, impedindo o processo de encerrar.
+ *
+ * Quem tem efeito colateral é o ponto de entrada (server.ts), não o import.
+ */
+export async function checkDatabaseConnection(): Promise<void> {
+  try {
+    const client = await pool.connect();
+    client.release(); // Devolve o client ao pool — sem isso, a conexão vaza
+    console.log('✅ Conectado ao Banco de Dados com sucesso!');
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'erro desconhecido';
+    console.error('❌ Erro ao conectar no Banco de Dados:', reason);
   }
-
-  console.log('✅ Conectado ao Banco de Dados com sucesso!');
-  release(); // Devolve o client ao pool — sem isso, cada import vazava uma conexão
-});
+}
 
 export { pool };

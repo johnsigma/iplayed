@@ -1,5 +1,8 @@
 import request from 'supertest';
 import { app } from '@shared/infra/http/app';
+import { closeDatabase } from '@tests/helpers/database';
+
+afterAll(closeDatabase);
 
 test('GET to /api/v1/status should return 200', async () => {
   const response = await request(app).get('/api/v1/status');
