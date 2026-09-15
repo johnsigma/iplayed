@@ -42,11 +42,15 @@ const igdbRawGameSchema = z.object({
 
 const igdbRawGameArraySchema = z.array(igdbRawGameSchema);
 
-interface TwitchTokenResponse {
-  access_token: string;
-  expires_in: number;
-  token_type: string;
-}
+// Validado com Zod como qualquer outra resposta externa. Um cast cru aqui
+// seria pior do que parece: `expires_in` ausente viraria NaN em
+// `tokenExpiresAt`, e como `Date.now() < NaN` é sempre falso, o cache de
+// token pararia de funcionar silenciosamente.
+const twitchTokenSchema = z.object({
+  access_token: z.string(),
+  expires_in: z.number(),
+  token_type: z.string(),
+});
 
 // Tempo máximo de espera por uma resposta da Twitch/IGDB antes de desistir.
 // Sem isso, uma API externa que trava (em vez de responder com erro) deixa
@@ -220,21 +224,36 @@ export class IgdbService {
       );
     }
 
-    const data = (await this.safeJson(
-      response,
-      'Twitch authentication endpoint',
-    )) as TwitchTokenResponse;
+    const json = await this.safeJson(response, 'Twitch authentication endpoint');
+    const parsed = twitchTokenSchema.safeParse(json);
 
-    this.accessToken = data.access_token;
-    this.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000; // Token expira 1 minuto antes do real para evitar problemas de sincronização
+    if (!parsed.success) {
+      throw new AppError(
+        `Unexpected response shape from Twitch authentication endpoint: ${parsed.error.message}`,
+        503,
+      );
+    }
+
+    this.accessToken = parsed.data.access_token;
+    this.tokenExpiresAt = Date.now() + (parsed.data.expires_in - 60) * 1000; // Token expira 1 minuto antes do real para evitar problemas de sincronização
 
     return this.accessToken;
+  }
+
+  // Descarta o token em cache. Necessário quando a IGDB responde 401/403: o
+  // token pode ter sido revogado ou a credencial rotacionada, e nesse caso
+  // ele continuaria sendo reenviado até o `expires_in` original vencer —
+  // semanas, no caso de app tokens da Twitch.
+  private invalidateToken(): void {
+    this.accessToken = null;
+    this.tokenExpiresAt = 0;
   }
 
   private async request<T>(
     endpoint: string,
     query: string,
     schema: ZodType<T>,
+    isRetry = false,
   ): Promise<T> {
     const token = await this.getAccessToken();
 
@@ -251,6 +270,16 @@ export class IgdbService {
       },
       `IGDB endpoint "${endpoint}"`,
     );
+
+    // 401/403 significa que o token em cache não vale mais. Descartamos e
+    // tentamos uma única vez com um token novo — assim o service se recupera
+    // sozinho de uma rotação de credencial, em vez de ficar em 503 até o
+    // token antigo expirar. O `isRetry` impede laço infinito se as
+    // credenciais estiverem realmente inválidas.
+    if (!isRetry && (response.status === 401 || response.status === 403)) {
+      this.invalidateToken();
+      return this.request(endpoint, query, schema, true);
+    }
 
     if (!response.ok) {
       throw new AppError(
@@ -291,6 +320,13 @@ export class IgdbService {
   }
 
   async getGameById(id: number): Promise<IgdbGame | null> {
+    // O tipo `number` não impede NaN, Infinity ou 1.5 — e um controller que
+    // faça `Number(req.params.id)` produz NaN facilmente. Sem essa guarda,
+    // isso viraria `where id = NaN;` na query da IGDB.
+    if (!Number.isInteger(id)) {
+      throw new AppError(`Invalid IGDB game id: ${id}`, 400);
+    }
+
     const igdbQuery = `fields id, name, slug, cover.image_id, platforms.id, platforms.name, platforms.slug, first_release_date, summary, release_dates.date, release_dates.platform; where id = ${id}; limit 1;`;
 
     const results = await this.request(

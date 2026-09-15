@@ -268,6 +268,68 @@ describe('IgdbService', () => {
       });
     });
 
+    // Sem validar o corpo do token, `expires_in` ausente viraria NaN em
+    // tokenExpiresAt e o cache de token pararia de funcionar em silêncio —
+    // o service passaria a pedir token novo a cada chamada.
+    it('should throw an AppError 503 when the Twitch token response has an unexpected shape', async () => {
+      server.use(twitchToken({ unexpected: 'shape' }, 200));
+
+      const service = new IgdbService();
+      await expect(service.searchGames('witcher')).rejects.toMatchObject({
+        statusCode: 503,
+      });
+    });
+
+    // Recuperação automática de credencial rotacionada/revogada: sem isso, o
+    // token inválido continuaria em cache até expirar de verdade.
+    it('should discard the cached token and retry once when IGDB answers 401', async () => {
+      let tokenRequestCount = 0;
+      let gamesRequestCount = 0;
+
+      server.use(
+        http.post('https://id.twitch.tv/oauth2/token', () => {
+          tokenRequestCount++;
+          return HttpResponse.json({
+            access_token: `token_${tokenRequestCount}`,
+            expires_in: 3600,
+            token_type: 'bearer',
+          });
+        }),
+        http.post('https://api.igdb.com/v4/games', () => {
+          gamesRequestCount++;
+          // Só a primeira chamada é rejeitada, simulando um token revogado
+          if (gamesRequestCount === 1) {
+            return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 });
+          }
+          return HttpResponse.json([mockGame]);
+        }),
+      );
+
+      const service = new IgdbService();
+      const results = await service.searchGames('witcher');
+
+      expect(results).toHaveLength(1);
+      expect(tokenRequestCount).toBe(2); // buscou um token novo
+      expect(gamesRequestCount).toBe(2); // e repetiu a chamada
+    });
+
+    it('should not retry more than once when the credentials are really invalid', async () => {
+      let gamesRequestCount = 0;
+
+      server.use(
+        http.post('https://api.igdb.com/v4/games', () => {
+          gamesRequestCount++;
+          return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 });
+        }),
+      );
+
+      const service = new IgdbService();
+      await expect(service.searchGames('witcher')).rejects.toMatchObject({
+        statusCode: 503,
+      });
+      expect(gamesRequestCount).toBe(2); // a original e uma única retentativa
+    });
+
     it('should throw an AppError 503 when the request takes too long', async () => {
       server.use(
         http.post('https://api.igdb.com/v4/games', async () => {
@@ -372,6 +434,27 @@ describe('IgdbService', () => {
 
       expect(game?.release_dates).toEqual([]);
     });
+
+    // `number` em TypeScript inclui NaN e frações — e `Number(req.params.id)`
+    // de um controller produz NaN sem esforço nenhum.
+    it.each([NaN, Infinity, 1.5])(
+      'should reject %p as a game id without calling IGDB',
+      async (invalidId) => {
+        let igdbWasCalled = false;
+        server.use(
+          http.post('https://api.igdb.com/v4/games', () => {
+            igdbWasCalled = true;
+            return HttpResponse.json([]);
+          }),
+        );
+
+        const service = new IgdbService();
+        await expect(service.getGameById(invalidId)).rejects.toMatchObject({
+          statusCode: 400,
+        });
+        expect(igdbWasCalled).toBe(false);
+      },
+    );
 
     it('should return null when the game is not found', async () => {
       const service = new IgdbService();
