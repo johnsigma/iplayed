@@ -36,6 +36,12 @@
 - Criar testes junto com cada feature, nunca deixar para depois
 - Sempre avisar quando uma feature nova exige novos testes ou quando testes existentes precisam ser atualizados
 
+## Revisão de código
+
+- Rodar `/code-review` (nível `low` ou `medium`) antes de cada commit de feature — roda dentro da sessão, sem custo adicional
+- Reservar `high`/`max` para mudanças estruturalmente mais arriscadas (múltiplos serviços, lógica de transação, agregações complexas)
+- Reservar `/code-review ultra` (multi-agente, na nuvem, cobrado à parte) para marcos maiores — fim de milestone ou PRs — nunca por commit
+
 ## Gestão de tarefas
 
 O projeto usa Milestones e Tasks no GitHub (não sprints).
