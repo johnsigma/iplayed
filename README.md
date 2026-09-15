@@ -43,12 +43,15 @@ O desenvolvimento está organizado em etapas orgânicas, permitindo uma evoluç�
 
 ## 🚀 Como rodar o projeto
 
-> *Nota: O projeto está atualmente no Milestone 1 (Infraestrutura).*
+> *Nota: O projeto está atualmente no Milestone 2 (Integração de Dados — IGDB).*
 
 1.  Clone o repositório.
 2.  Certifique-se de ter o Docker instalado.
-3.  Execute `docker-compose up -d` para subir o banco de dados.
+3.  Copie `.env.example` para `.env.development` e `.env.test` e preencha as credenciais.
 4.  Instale as dependências com `npm install`.
+5.  Execute `docker compose up -d` para subir os bancos de desenvolvimento e teste (definidos em `compose.yaml`).
+6.  Rode as migrations: `npm run migrate:up` (banco de desenvolvimento) e `npm run migrate:up:test` (banco de teste).
+7.  Inicie o servidor com `npm run dev`.
 
 ---
 
