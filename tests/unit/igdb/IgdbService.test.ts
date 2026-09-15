@@ -8,7 +8,7 @@ const mockGame = {
   slug: 'the-witcher-3-wild-hunt',
   cover: { id: 10, image_id: 'co1wyy' },
   first_release_date: 1431993600,
-  platforms: [{ id: 6, name: 'PC (Microsoft Windows)' }],
+  platforms: [{ id: 6, name: 'PC (Microsoft Windows)', slug: 'win' }],
 };
 
 const igdbGames = (games: JsonBodyType) =>
@@ -74,8 +74,32 @@ describe('IgdbService', () => {
         slug: 'the-witcher-3-wild-hunt',
         cover_image_id: 'co1wyy',
         first_release_date: '2015-05-19T00:00:00.000Z',
-        platforms: [{ id: 6, name: 'PC (Microsoft Windows)' }],
+        platforms: [{ id: 6, name: 'PC (Microsoft Windows)', slug: 'win' }],
       });
+    });
+
+    // `platforms.slug` é NOT NULL no nosso banco, então uma plataforma sem
+    // slug não teria como ser persistida. A escolha aqui é descartar a
+    // plataforma e manter o jogo, em vez de reprovar a resposta inteira.
+    it('should drop platforms that have no slug instead of failing the whole game', async () => {
+      server.use(
+        igdbGames([
+          {
+            ...mockGame,
+            platforms: [
+              { id: 6, name: 'PC (Microsoft Windows)', slug: 'win' },
+              { id: 999, name: 'Plataforma Sem Slug' },
+            ],
+          },
+        ]),
+      );
+
+      const service = new IgdbService();
+      const results = await service.searchGames('witcher');
+
+      expect(results[0].platforms).toEqual([
+        { id: 6, name: 'PC (Microsoft Windows)', slug: 'win' },
+      ]);
     });
 
     it('should set optional fields to null when they are missing in the API response', async () => {
@@ -263,7 +287,15 @@ describe('IgdbService', () => {
 
   describe('getGameById', () => {
     it('should return a transformed complete game object when the API returns valid data', async () => {
-      server.use(igdbGames([{ ...mockGame, summary: 'An epic RPG.' }]));
+      server.use(
+        igdbGames([
+          {
+            ...mockGame,
+            summary: 'An epic RPG.',
+            release_dates: [{ date: 1431993600, platform: 6 }],
+          },
+        ]),
+      );
       const service = new IgdbService();
       const game = await service.getGameById(1942);
 
@@ -273,9 +305,72 @@ describe('IgdbService', () => {
         slug: 'the-witcher-3-wild-hunt',
         cover_image_id: 'co1wyy',
         first_release_date: '2015-05-19T00:00:00.000Z',
-        platforms: [{ id: 6, name: 'PC (Microsoft Windows)' }],
+        platforms: [{ id: 6, name: 'PC (Microsoft Windows)', slug: 'win' }],
         summary: 'An epic RPG.',
+        release_dates: [
+          { platform_id: 6, date: '2015-05-19T00:00:00.000Z' },
+        ],
       });
+    });
+
+    // A IGDB devolve uma entrada por plataforma E por região — o mesmo jogo
+    // pode ter três datas para a mesma plataforma. O service devolve todas;
+    // quem persiste é que decide qual usar.
+    it('should map every release date entry, including multiple for the same platform', async () => {
+      server.use(
+        igdbGames([
+          {
+            ...mockGame,
+            release_dates: [
+              { date: 1431993600, platform: 6 }, // 2015-05-19
+              { date: 1433203200, platform: 6 }, // 2015-06-02 (outra região)
+              { date: 1447200000, platform: 48 }, // 2015-11-11, outra plataforma
+            ],
+          },
+        ]),
+      );
+
+      const service = new IgdbService();
+      const game = await service.getGameById(1942);
+
+      expect(game?.release_dates).toEqual([
+        { platform_id: 6, date: '2015-05-19T00:00:00.000Z' },
+        { platform_id: 6, date: '2015-06-02T00:00:00.000Z' },
+        { platform_id: 48, date: '2015-11-11T00:00:00.000Z' },
+      ]);
+    });
+
+    // Lançamentos "TBD" ou com só o ano conhecido chegam sem `date`; sem data
+    // ou sem plataforma não há como preencher game_platforms.release_date.
+    it('should drop release date entries missing a date or a platform', async () => {
+      server.use(
+        igdbGames([
+          {
+            ...mockGame,
+            release_dates: [
+              { date: 1431993600, platform: 6 },
+              { platform: 48 }, // data ainda não anunciada
+              { date: 1447200000 }, // sem plataforma
+            ],
+          },
+        ]),
+      );
+
+      const service = new IgdbService();
+      const game = await service.getGameById(1942);
+
+      expect(game?.release_dates).toEqual([
+        { platform_id: 6, date: '2015-05-19T00:00:00.000Z' },
+      ]);
+    });
+
+    it('should return an empty release date list when the game has none', async () => {
+      server.use(igdbGames([mockGame]));
+
+      const service = new IgdbService();
+      const game = await service.getGameById(1942);
+
+      expect(game?.release_dates).toEqual([]);
     });
 
     it('should return null when the game is not found', async () => {

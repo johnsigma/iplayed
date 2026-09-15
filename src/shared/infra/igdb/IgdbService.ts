@@ -1,10 +1,27 @@
 import { AppError } from '@shared/errors/AppError';
 import { z, ZodType } from 'zod';
-import { IgdbGame, IgdbGameSearchResult } from './types';
+import {
+  IgdbGame,
+  IgdbGameSearchResult,
+  IgdbPlatform,
+  IgdbReleaseDate,
+} from './types';
 
 const igdbRawPlatformSchema = z.object({
   id: z.number(),
   name: z.string(),
+  // Opcional de propósito: um campo ausente aqui não deve reprovar a resposta
+  // inteira. Plataformas sem slug são descartadas no mapeamento, já que
+  // `platforms.slug` é NOT NULL no nosso banco.
+  slug: z.string().optional(),
+});
+
+// A IGDB devolve uma entrada por plataforma E por região, e nem toda entrada
+// tem data definida (lançamentos "TBD", ou só com ano conhecido). Por isso
+// tanto o array quanto cada campo são opcionais.
+const igdbRawReleaseDateSchema = z.object({
+  date: z.number().optional(),
+  platform: z.number().optional(),
 });
 
 const igdbRawGameSchema = z.object({
@@ -20,6 +37,7 @@ const igdbRawGameSchema = z.object({
   first_release_date: z.number().optional(),
   summary: z.string().optional(),
   platforms: z.array(igdbRawPlatformSchema).optional(),
+  release_dates: z.array(igdbRawReleaseDateSchema).optional(),
 });
 
 const igdbRawGameArraySchema = z.array(igdbRawGameSchema);
@@ -76,7 +94,7 @@ export class IgdbService {
 
   private mapRawToBase(
     raw: z.infer<typeof igdbRawGameSchema>,
-  ): Omit<IgdbGame, 'summary'> {
+  ): IgdbGameSearchResult {
     return {
       id: raw.id,
       name: raw.name,
@@ -85,8 +103,38 @@ export class IgdbService {
       first_release_date: raw.first_release_date
         ? new Date(raw.first_release_date * 1000).toISOString()
         : null,
-      platforms: raw.platforms ?? [],
+      platforms: this.mapPlatforms(raw),
     };
+  }
+
+  // Descarta plataformas sem slug: `platforms.slug` é NOT NULL no banco, então
+  // uma plataforma sem esse campo não teria como ser persistida. Perder uma
+  // plataforma é melhor do que reprovar o jogo inteiro.
+  private mapPlatforms(
+    raw: z.infer<typeof igdbRawGameSchema>,
+  ): IgdbPlatform[] {
+    return (raw.platforms ?? []).flatMap((platform) =>
+      platform.slug
+        ? [{ id: platform.id, name: platform.name, slug: platform.slug }]
+        : [],
+    );
+  }
+
+  // Descarta entradas sem data ou sem plataforma — sem esses dois campos não
+  // há como preencher `game_platforms.release_date`.
+  private mapReleaseDates(
+    raw: z.infer<typeof igdbRawGameSchema>,
+  ): IgdbReleaseDate[] {
+    return (raw.release_dates ?? []).flatMap((entry) =>
+      entry.date !== undefined && entry.platform !== undefined
+        ? [
+            {
+              platform_id: entry.platform,
+              date: new Date(entry.date * 1000).toISOString(),
+            },
+          ]
+        : [],
+    );
   }
 
   // Escapa barras invertidas e aspas duplas antes de colocar um valor vindo de
@@ -231,7 +279,7 @@ export class IgdbService {
     const safeQuery = this.escapeApicalypseString(query);
     const safeLimit = this.clampSearchLimit(limit);
 
-    const igdbQuery = `fields id, name, slug, cover.image_id, platforms.id, platforms.name, first_release_date; search "${safeQuery}"; limit ${safeLimit};`;
+    const igdbQuery = `fields id, name, slug, cover.image_id, platforms.id, platforms.name, platforms.slug, first_release_date; search "${safeQuery}"; limit ${safeLimit};`;
 
     const rawGames = await this.request(
       'games',
@@ -243,7 +291,7 @@ export class IgdbService {
   }
 
   async getGameById(id: number): Promise<IgdbGame | null> {
-    const igdbQuery = `fields id, name, slug, cover.image_id, platforms.id, platforms.name, first_release_date, summary; where id = ${id}; limit 1;`;
+    const igdbQuery = `fields id, name, slug, cover.image_id, platforms.id, platforms.name, platforms.slug, first_release_date, summary, release_dates.date, release_dates.platform; where id = ${id}; limit 1;`;
 
     const results = await this.request(
       'games',
@@ -259,6 +307,7 @@ export class IgdbService {
     return {
       ...base,
       summary: raw.summary ?? null,
+      release_dates: this.mapReleaseDates(raw),
     };
   }
 }
