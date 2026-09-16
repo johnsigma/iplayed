@@ -58,6 +58,25 @@ Antes de iniciar qualquer task, você deve:
    - Se existe algo nas tasks futuras que vale antecipar
 4. Só então perguntar se deve avançar
 
+## Acompanhamento do backlog no GitHub
+
+O projeto está sendo desenhado ao vivo — nem toda decisão de arquitetura foi
+tomada antes de começar, e isso é esperado.
+
+- Revisar ativamente o estado das issues e milestones no GitHub em busca de:
+  lacunas (issues sem corpo, sem critério de aceite, ou que pressupõem uma
+  decisão nunca tomada), inconsistências entre issues, issues no milestone
+  errado, e necessidade de criar, editar ou excluir issues/milestones
+- Ao identificar uma decisão arquitetural em aberto — mesmo que não seja o
+  foco da tarefa atual — trazer para discussão antes de agir: o problema, os
+  pontos em jogo, as alternativas concretas, a recomendação e o porquê
+  (mesmo formato de "Decisões técnicas")
+- Nunca decidir essas questões sozinho e seguir em frente — o usuário não é
+  engenheiro de sistemas e quer participar de cada decisão, não recebê-la
+  pronta
+- Vale mesmo quando a lacuna não bloqueia a tarefa atual: o objetivo é não
+  deixar buracos se acumularem silenciosamente no backlog
+
 ## Decisões técnicas
 
 - Nunca apresentar uma escolha como menu cru. Antes de pedir uma decisão, explicar: qual é o problema por trás dela, o que cada alternativa significa na prática (com exemplo de código quando ajudar), e quais argumentos existem a favor de cada uma
@@ -67,7 +86,6 @@ Antes de iniciar qualquer task, você deve:
 
 ## Avisos e sinalizações
 
-- **GitHub — issues/milestones:** Sempre avisar quando uma nova issue ou milestone dever ser criada no GitHub para rastrear trabalho em andamento ou planejado
 - **Git — commits:** Sempre avisar quando for um bom momento para fazer um commit (após feature, correção ou configuração significativa estar completa e funcional)
 - **Erros e complexidade:** Sempre que ocorrer um erro ou entrarmos em um tópico complexo/delicado, explicar detalhadamente a situação, apresentar comparativos quando útil e listar prós e contras das alternativas disponíveis
 - **README:** Sempre avisar quando uma evolução do projeto merecer ser documentada no README.md, sugerindo o que incluir ou modificar
