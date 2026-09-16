@@ -73,7 +73,7 @@ describe('IgdbService', () => {
         name: 'The Witcher 3: Wild Hunt',
         slug: 'the-witcher-3-wild-hunt',
         cover_image_id: 'co1wyy',
-        first_release_date: '2015-05-19T00:00:00.000Z',
+        first_release_date: '2015-05-19',
         platforms: [{ id: 6, name: 'PC (Microsoft Windows)', slug: 'win' }],
       });
     });
@@ -366,11 +366,11 @@ describe('IgdbService', () => {
         name: 'The Witcher 3: Wild Hunt',
         slug: 'the-witcher-3-wild-hunt',
         cover_image_id: 'co1wyy',
-        first_release_date: '2015-05-19T00:00:00.000Z',
+        first_release_date: '2015-05-19',
         platforms: [{ id: 6, name: 'PC (Microsoft Windows)', slug: 'win' }],
         summary: 'An epic RPG.',
         release_dates: [
-          { platform_id: 6, date: '2015-05-19T00:00:00.000Z' },
+          { platform_id: 6, date: '2015-05-19' },
         ],
       });
     });
@@ -396,9 +396,9 @@ describe('IgdbService', () => {
       const game = await service.getGameById(1942);
 
       expect(game?.release_dates).toEqual([
-        { platform_id: 6, date: '2015-05-19T00:00:00.000Z' },
-        { platform_id: 6, date: '2015-06-02T00:00:00.000Z' },
-        { platform_id: 48, date: '2015-11-11T00:00:00.000Z' },
+        { platform_id: 6, date: '2015-05-19' },
+        { platform_id: 6, date: '2015-06-02' },
+        { platform_id: 48, date: '2015-11-11' },
       ]);
     });
 
@@ -422,7 +422,7 @@ describe('IgdbService', () => {
       const game = await service.getGameById(1942);
 
       expect(game?.release_dates).toEqual([
-        { platform_id: 6, date: '2015-05-19T00:00:00.000Z' },
+        { platform_id: 6, date: '2015-05-19' },
       ]);
     });
 

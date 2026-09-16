@@ -21,6 +21,10 @@ describe('database connection module', () => {
         on,
         end: jest.fn(),
       })),
+      // O módulo registra um parser de tipo para DATE (OID 1082) na
+      // inicialização — sem esse mock, o import quebra antes de chegar em
+      // qualquer coisa que os testes queiram exercitar.
+      types: { setTypeParser: jest.fn() },
     }));
 
     return { connect, on };

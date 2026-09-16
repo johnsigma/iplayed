@@ -32,17 +32,16 @@ const mockIgdbGame = (payload: JsonBodyType) =>
     return HttpResponse.json(payload);
   });
 
-// As colunas TIMESTAMP são lidas pelo driver como Date em horário local, o
-// que tornaria as asserções dependentes do fuso da máquina. Comparar a data
-// formatada pelo próprio Postgres evita esse ruído.
+// `release_date` é DATE, e o driver está configurado para devolvê-la como
+// 'YYYY-MM-DD' cru (ver setTypeParser em shared/infra/database/index.ts) —
+// não precisa mais de conversão defensiva de fuso aqui.
 async function releaseDateOf(platformId: number): Promise<string | null> {
   const result = await pool.query(
-    `SELECT to_char(release_date, 'YYYY-MM-DD') AS date
-       FROM game_platforms WHERE platform_id = $1;`,
+    `SELECT release_date FROM game_platforms WHERE platform_id = $1;`,
     [platformId],
   );
 
-  return result.rows[0]?.date ?? null;
+  return result.rows[0]?.release_date ?? null;
 }
 
 describe('UpsertGameService (integração)', () => {
@@ -68,6 +67,9 @@ describe('UpsertGameService (integração)', () => {
     expect(game.slug).toBe('the-witcher-3-wild-hunt');
     expect(game.cover_image_id).toBe('co1wyy');
     expect(game.summary).toBe('An epic RPG.');
+    // Prova de ponta a ponta do setTypeParser: sem ele, isso viria como um
+    // objeto Date em meia-noite no fuso local, não a string 'YYYY-MM-DD'.
+    expect(game.first_release_date).toBe('2015-05-19');
 
     const platforms = await pool.query(
       'SELECT id_igdb, name, slug FROM platforms ORDER BY id_igdb;',

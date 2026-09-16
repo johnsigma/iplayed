@@ -96,6 +96,17 @@ export class IgdbService {
     this.requestTimeoutMs = requestTimeoutMs;
   }
 
+  // Datas de lançamento são um fato de calendário ("saiu em 19/05/2015"), não
+  // um instante — por isso viram 'YYYY-MM-DD', não um ISO completo com hora.
+  // A IGDB convenciona meia-noite UTC para representar "esse dia", então ler
+  // a data em UTC (o que `toISOString` sempre faz) é a leitura correta, não
+  // uma escolha arbitrária de fuso. Formato consistente com a coluna DATE no
+  // banco: quem lê da busca (IGDB direto) e quem lê do jogo salvo (banco) veem
+  // o mesmo formato.
+  private toCalendarDate(unixSeconds: number): string {
+    return new Date(unixSeconds * 1000).toISOString().slice(0, 10);
+  }
+
   private mapRawToBase(
     raw: z.infer<typeof igdbRawGameSchema>,
   ): IgdbGameSearchResult {
@@ -105,7 +116,7 @@ export class IgdbService {
       slug: raw.slug,
       cover_image_id: raw.cover?.image_id ?? null,
       first_release_date: raw.first_release_date
-        ? new Date(raw.first_release_date * 1000).toISOString()
+        ? this.toCalendarDate(raw.first_release_date)
         : null,
       platforms: this.mapPlatforms(raw),
     };
@@ -134,7 +145,7 @@ export class IgdbService {
         ? [
             {
               platform_id: entry.platform,
-              date: new Date(entry.date * 1000).toISOString(),
+              date: this.toCalendarDate(entry.date),
             },
           ]
         : [],

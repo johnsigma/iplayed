@@ -1,10 +1,25 @@
-import { Pool } from 'pg';
+import { Pool, types } from 'pg';
 import dotenv from 'dotenv';
 import { expand } from 'dotenv-expand';
 
 expand(
   dotenv.config({ path: `.env.${process.env.NODE_ENV ?? 'development'}` }),
 );
+
+// Por padrão o driver converte colunas DATE para um objeto Date em meia-noite
+// NO FUSO LOCAL DA MÁQUINA — o que reintroduz a mesma ambiguidade de fuso que
+// a migration de DATE existe para eliminar. O Postgres já manda o valor como
+// texto 'YYYY-MM-DD'; devolvemos esse texto sem conversão.
+//
+// O registro é por OID (o código numérico que o Postgres usa para cada tipo
+// na resposta): 1082 é especificamente DATE. TIMESTAMP (1114) e TIMESTAMPTZ
+// (1184) têm entradas próprias e continuam sendo convertidos normalmente.
+//
+// Configuração de driver, como as credenciais do Pool — por isso mora aqui,
+// não atrás de uma função exportada como o `checkDatabaseConnection`: não há
+// I/O envolvido, só registro em memória, e afeta qualquer conexão criada a
+// partir deste módulo.
+types.setTypeParser(1082, (value: string) => value);
 
 const pool = new Pool({
   user: process.env.POSTGRES_USER,
