@@ -11,8 +11,15 @@ info:
   license:
     name: MIT
 servers:
-  - url: http://localhost:3000/api/v1
+  - url: '{baseUrl}'
     description: Ambiente de desenvolvimento local
+    variables:
+      # Nomeado exatamente `baseUrl` porque foi assim que o Bruno já nomeou a
+      # variável sozinho ao importar da versão anterior deste arquivo — só
+      # faltava o `default`, que é o que os importadores de OpenAPI leem para
+      # preencher o valor inicial de uma variável de servidor.
+      baseUrl:
+        default: http://localhost:3000/api/v1
 
 # Nenhum endpoint exige autenticação ainda — isso muda no Milestone 3
 # (segurança/JWT). Declarado vazio aqui de propósito, não esquecido.
