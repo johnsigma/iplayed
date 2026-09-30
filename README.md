@@ -6,11 +6,34 @@ A ideia é criar um espaço inspirado no modelo do Letterboxd, onde o jogador po
 
 ---
 
-## ✨ Funcionalidades em Foco
+## 📍 Estado atual do projeto
 
-O projeto está sendo construído para resolver problemas reais de catalogação e análise de jogos:
+> Atualizado em 30/09/2026. `gh issue list` no repositório é sempre a fonte mais fina; isto aqui é o resumo de orientação rápida.
 
-* **Avaliação Multidimensional:** Diferenciação entre a nota subjetiva (o seu "feeling" com o jogo) e notas técnicas para critérios como *Jogabilidade, Trilha Sonora, História, Gráficos e Level Design*. As notas aceitam casas decimais (ex: 8.5, 9.0).
+**Milestone 2 (Integração com a IGDB) está quase concluída.** A ordem dos milestones seguintes foi revisada: segurança/autenticação vem antes do núcleo de reviews, porque criar uma review exige um usuário autenticado existindo (ver histórico de decisões nas issues do repositório).
+
+| # | Milestone | Status |
+|---|---|---|
+| 1 | Fundação e Infraestrutura | ✅ Concluído |
+| 2 | Integração de Dados (O Motor IGDB) | 🔵 Quase concluído |
+| 3 | Segurança e Autenticação (O Filtro) | ⬜ Não iniciado |
+| 4 | Núcleo do Negócio (Reviews e Ratings) | ⬜ Não iniciado |
+| 5 | Polimento e Documentação | ⬜ Não iniciado |
+
+**O que já funciona de verdade, hoje:**
+
+* `GET /api/v1/status` — saúde da aplicação e do banco de dados
+* `GET /api/v1/games/search?q=...&limit=...` — busca de jogos direto na IGDB (sem persistência local ainda)
+
+Nada de reviews, notas ou autenticação existe na API ainda — isso é a visão do produto (próxima seção), não o estado atual. Para explorar os endpoints reais, importe [`docs/openapi.yaml`](docs/openapi.yaml) no Bruno, Insomnia ou Postman — o arquivo cresce junto com cada endpoint novo.
+
+---
+
+## ✨ Visão do produto
+
+O projeto está sendo construído para resolver problemas reais de catalogação e análise de jogos — a lista abaixo descreve a visão completa, não o que já está implementado (ver "Estado atual" acima):
+
+* **Avaliação Multidimensional:** Diferenciação entre a nota subjetiva (o seu "feeling" com o jogo) e notas técnicas para os critérios *Jogabilidade, Narrativa, Visual, Áudio e Desempenho Técnico* (nomes definidos, definição detalhada de cada um em andamento). As notas aceitam casas decimais (ex: 8.5, 9.0), e nem todo critério precisa ser preenchido em toda review.
 * **Contexto por Plataforma:** Reconhecemos que a experiência de um jogo pode mudar drasticamente entre plataformas. O iPlayed permite registrar e filtrar análises baseadas no hardware utilizado.
 * **Integração com IGDB:** Uso da base de dados da IGDB (Twitch) para buscar metadados reais, capas e datas de lançamento, mantendo um cache local para performance e consistência.
 * **Métricas da Comunidade:** Processamento inteligente de médias de notas e volume de avaliações, oferecendo uma visão técnica e social de cada título.
@@ -35,15 +58,13 @@ O desenvolvimento está organizado em etapas orgânicas, permitindo uma evoluç�
 
 1.  **Fundação:** Setup de infraestrutura, Docker e modelagem inicial do banco de dados.
 2.  **Motor de Dados:** Integração com a API externa e lógica de persistência local.
-3.  **Domínio de Negócio:** Implementação das rotas de reviews, notas e cálculos de estatísticas.
-4.  **Segurança:** Implementação de autenticação JWT e controle de permissões.
+3.  **Segurança:** Implementação de autenticação JWT e controle de permissões.
+4.  **Domínio de Negócio:** Implementação das rotas de reviews, notas e cálculos de estatísticas.
 5.  **Interface (Futuro):** Desenvolvimento de um front-end moderno para consumo da API.
 
 ---
 
 ## 🚀 Como rodar o projeto
-
-> *Nota: O projeto está atualmente no Milestone 2 (Integração de Dados — IGDB).*
 
 1.  Clone o repositório.
 2.  Certifique-se de ter o Docker instalado.
