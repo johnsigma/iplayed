@@ -3,7 +3,7 @@ import { AppError } from '@shared/errors/AppError';
 import { pool } from '@shared/infra/database';
 import { withTransaction } from '@shared/infra/database/withTransaction';
 import { getIgdbService } from '@shared/infra/igdb/IgdbService';
-import { IgdbGame } from '@shared/infra/igdb/types';
+import { IGDB_GAME_TYPE, IgdbGame } from '@shared/infra/igdb/types';
 import { Game } from '../types';
 
 // Tanto o pool quanto um client de transação sabem executar query. Aceitar os
@@ -15,6 +15,23 @@ interface GamePlatformLink {
   platform_id: number;
   release_date: string | null;
 }
+
+// Tipos que uma edição de outro jogo pode ter, observados nos dados reais da
+// IGDB: edições de colecionador/"Ultimate" vêm como Main Game; GOTY e
+// Complete Edition (as que trazem todas as DLCs) vêm como Bundle. Qualquer
+// outra combinação com `version_parent` — um Remaster ou uma DLC marcados
+// como edição, por exemplo — seria dado contraditório, e na dúvida não
+// mesclamos (ver issue #55).
+const EDITION_GAME_TYPES: ReadonlySet<number> = new Set([
+  IGDB_GAME_TYPE.MAIN_GAME,
+  IGDB_GAME_TYPE.BUNDLE,
+]);
+
+// Quantas vezes seguimos `version_parent` até chegar num jogo que não seja
+// edição. Nenhuma cadeia com mais de um salto apareceu nos dados levantados
+// para a issue #55 — o limite existe para que um ciclo (A edição de B, B
+// edição de A) termine em erro em vez de rodar para sempre.
+const MAX_EDITION_REDIRECTS = 3;
 
 const GAME_COLUMNS = `
   id_igdb,
@@ -35,6 +52,12 @@ const GAME_COLUMNS = `
  * usuário (criar review, escolher um jogo da busca), e ações de usuário se
  * repetem — duplo clique, retry após falha de rede, dois usuários avaliando
  * o mesmo jogo ao mesmo tempo.
+ *
+ * Edições de um mesmo jogo (colecionador, GOTY, Complete...) nunca são
+ * gravadas: no lugar delas grava-se o jogo de origem, para que as reviews de
+ * um mesmo jogo não fiquem espalhadas entre as edições (issue #55). Por isso
+ * **o jogo devolvido pode ter `id_igdb` diferente do id pedido** — quem chama
+ * deve usar o id devolvido dali em diante.
  */
 export class UpsertGameService {
   async execute(igdbId: number): Promise<Game> {
@@ -44,12 +67,80 @@ export class UpsertGameService {
     const cached = await this.findGame(pool, igdbId);
     if (cached) return cached;
 
-    const igdbGame = await getIgdbService().getGameById(igdbId);
+    const requested = await getIgdbService().getGameById(igdbId);
 
-    if (!igdbGame) {
+    if (!requested) {
       throw new AppError(`Game ${igdbId} not found on IGDB`, 404);
     }
 
+    return this.persistCanonical(requested);
+  }
+
+  /**
+   * Grava o jogo de origem de `game` — ou o próprio `game`, se ele não for
+   * edição de nenhum outro. Se o de origem também for edição, segue a cadeia.
+   *
+   * Nunca grava nada a partir de dado inconsistente da IGDB (referência para
+   * um jogo que não existe, ou cadeia que não termina): nesses casos lança
+   * 503 sem persistir. Gravar é uma decisão permanente — a checagem de cache
+   * no início de `execute` devolveria o id gravado errado para sempre, sem
+   * nunca mais reavaliar. Falhar deixa a próxima tentativa decidir de novo,
+   * quando a IGDB talvez já esteja consistente.
+   */
+  private async persistCanonical(
+    game: IgdbGame,
+    redirects = 0,
+  ): Promise<Game> {
+    const canonicalId = this.canonicalIdOf(game);
+
+    if (canonicalId === game.id) {
+      return this.persist(game);
+    }
+
+    if (redirects === MAX_EDITION_REDIRECTS) {
+      throw new AppError(
+        `Game ${game.id} is still an edition after ${MAX_EDITION_REDIRECTS} redirects on IGDB (cycle or chain too long)`,
+        503,
+      );
+    }
+
+    // Edições nunca são gravadas, então a checagem de cache no início de
+    // `execute` sempre falha para elas; aqui é a chance real de evitar mais
+    // uma chamada à IGDB.
+    const cachedCanonical = await this.findGame(pool, canonicalId);
+    if (cachedCanonical) return cachedCanonical;
+
+    const canonical = await getIgdbService().getGameById(canonicalId);
+
+    if (!canonical) {
+      throw new AppError(
+        `Game ${game.id} is an edition of game ${canonicalId}, which was not found on IGDB`,
+        503,
+      );
+    }
+
+    return this.persistCanonical(canonical, redirects + 1);
+  }
+
+  /**
+   * Id do jogo de origem, se `game` for uma edição; o próprio id caso
+   * contrário. `game_type` desempata quando o sinal é contraditório: um
+   * Remaster com `version_parent` continua sendo Remaster (ver
+   * EDITION_GAME_TYPES).
+   */
+  private canonicalIdOf(game: IgdbGame): number {
+    if (
+      game.version_parent !== null &&
+      game.game_type !== null &&
+      EDITION_GAME_TYPES.has(game.game_type)
+    ) {
+      return game.version_parent;
+    }
+
+    return game.id;
+  }
+
+  private persist(igdbGame: IgdbGame): Promise<Game> {
     return withTransaction(async (client) => {
       // A ordem importa: `game_platforms` tem FK para as outras duas tabelas,
       // então plataformas e jogo precisam existir antes do vínculo.

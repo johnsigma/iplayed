@@ -372,8 +372,100 @@ describe('IgdbService', () => {
         release_dates: [
           { platform_id: 6, date: '2015-05-19' },
         ],
+        // O payload não traz esses dois campos — a maioria dos jogos não é
+        // edição de nada, e o ausente vira null em vez de undefined.
+        version_parent: null,
+        game_type: null,
       });
     });
+
+    // O QUE VERIFICA: quando a IGDB manda `version_parent` e `game_type`, o
+    // service os devolve intactos.
+    //
+    // POR QUE FOI CRIADO: são os dois campos que o UpsertGameService usa para
+    // decidir se uma entrada é edição de outro jogo (issue #55). O payload
+    // aqui imita a GOTY Edition real do Witcher 3 — que vem tipada como
+    // Bundle (3), não Main Game.
+    //
+    // O QUE GARANTE: que o mapeamento não perde nem troca esses valores no
+    // caminho — sem eles, o redirecionamento de edições nunca dispararia.
+    it('should expose version_parent and game_type when IGDB sends them', async () => {
+      server.use(
+        igdbGames([
+          {
+            ...mockGame,
+            id: 22439,
+            name: 'The Witcher 3: Wild Hunt - Game of the Year Edition',
+            version_parent: 1942,
+            game_type: 3,
+          },
+        ]),
+      );
+
+      const service = new IgdbService();
+      const game = await service.getGameById(22439);
+
+      expect(game?.version_parent).toBe(1942);
+      expect(game?.game_type).toBe(3);
+    });
+
+    // O QUE VERIFICA: a query enviada à IGDB pede `version_parent` e
+    // `game_type`.
+    //
+    // POR QUE FOI CRIADO: é a única rede de segurança contra uma regressão
+    // silenciosa específica. Os dois campos são opcionais no schema Zod — se
+    // alguém removesse `version_parent` da query, a IGDB pararia de mandá-lo,
+    // o Zod aceitaria a ausência sem reclamar, todo jogo passaria a vir com
+    // `version_parent: null`, e o redirecionamento de edições simplesmente
+    // deixaria de acontecer. Os testes de integração não pegariam isso: o MSW
+    // devolve o payload que o teste manda, independente dos campos pedidos.
+    //
+    // O QUE GARANTE: que os campos continuam sendo pedidos de verdade.
+    it('should request version_parent and game_type in the getGameById query', async () => {
+      let capturedBody = '';
+
+      server.use(
+        http.post('https://api.igdb.com/v4/games', async ({ request }) => {
+          capturedBody = await request.text();
+          return HttpResponse.json([mockGame]);
+        }),
+      );
+
+      const service = new IgdbService();
+      await service.getGameById(1942);
+
+      expect(capturedBody).toContain('version_parent');
+      expect(capturedBody).toContain('game_type');
+    });
+
+    // O QUE VERIFICA: um `version_parent` que não seja inteiro positivo
+    // reprova a resposta da IGDB com 503.
+    //
+    // POR QUE FOI CRIADO: achado do code-review da issue #55. Sem essa
+    // validação, um `version_parent` 1.5 seguiria até `getGameById(1.5)`,
+    // que o recusaria com 400 ("Invalid IGDB game id") — um erro atribuído
+    // ao cliente para um dado inválido que veio da IGDB. E um 0 viraria uma
+    // busca por `where id = 0`.
+    //
+    // O QUE GARANTE: que o dado inválido é pego na fronteira, como problema
+    // da IGDB (503), antes de chegar em qualquer lógica que o use. Os casos
+    // positivos (inteiros válidos, inclusive `game_type: 0`) já são cobertos
+    // pelos testes de redirecionamento de edições.
+    it.each([0, 1.5, -7])(
+      'should reject a response whose version_parent is %p with 503',
+      async (versionParent) => {
+        server.use(
+          igdbGames([
+            { ...mockGame, version_parent: versionParent, game_type: 0 },
+          ]),
+        );
+
+        const service = new IgdbService();
+        await expect(service.getGameById(1942)).rejects.toMatchObject({
+          statusCode: 503,
+        });
+      },
+    );
 
     // A IGDB devolve uma entrada por plataforma E por região — o mesmo jogo
     // pode ter três datas para a mesma plataforma. O service devolve todas;

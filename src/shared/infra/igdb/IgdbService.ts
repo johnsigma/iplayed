@@ -38,6 +38,16 @@ const igdbRawGameSchema = z.object({
   summary: z.string().optional(),
   platforms: z.array(igdbRawPlatformSchema).optional(),
   release_dates: z.array(igdbRawReleaseDateSchema).optional(),
+  // `version_parent` só existe em edições. `game_type` vem em todos os jogos
+  // da IGDB (conferido em 30/09/2026: 377.045 de 377.045) — é opcional aqui
+  // só porque este schema também valida a busca, que não pede esse campo.
+  //
+  // Os dois são inteiros validados na fronteira: um `version_parent` 1.5
+  // seguiria adiante até `getGameById`, que o recusaria com 400 — culpando o
+  // cliente por um dado inválido da IGDB. `game_type` aceita 0 porque 0 é
+  // justamente "Main Game".
+  version_parent: z.number().int().positive().optional(),
+  game_type: z.number().int().nonnegative().optional(),
 });
 
 const igdbRawGameArraySchema = z.array(igdbRawGameSchema);
@@ -338,7 +348,7 @@ export class IgdbService {
       throw new AppError(`Invalid IGDB game id: ${id}`, 400);
     }
 
-    const igdbQuery = `fields id, name, slug, cover.image_id, platforms.id, platforms.name, platforms.slug, first_release_date, summary, release_dates.date, release_dates.platform; where id = ${id}; limit 1;`;
+    const igdbQuery = `fields id, name, slug, cover.image_id, platforms.id, platforms.name, platforms.slug, first_release_date, summary, release_dates.date, release_dates.platform, version_parent, game_type; where id = ${id}; limit 1;`;
 
     const results = await this.request(
       'games',
@@ -355,6 +365,8 @@ export class IgdbService {
       ...base,
       summary: raw.summary ?? null,
       release_dates: this.mapReleaseDates(raw),
+      version_parent: raw.version_parent ?? null,
+      game_type: raw.game_type ?? null,
     };
   }
 }
