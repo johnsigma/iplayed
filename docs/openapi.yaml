@@ -1,0 +1,188 @@
+openapi: 3.0.3
+info:
+  title: iPlayed API
+  description: >
+    API do iPlayed — catalogação e avaliação técnica de jogos, inspirada no
+    modelo do Letterboxd. Este arquivo cresce junto com cada endpoint novo
+    (ver issue #19); importe-o no Bruno, Insomnia ou Postman para gerar uma
+    coleção de requisições sempre em dia com a API real, em vez de manter
+    uma coleção separada à mão.
+  version: "0.1.0"
+  license:
+    name: MIT
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Ambiente de desenvolvimento local
+
+# Nenhum endpoint exige autenticação ainda — isso muda no Milestone 3
+# (segurança/JWT). Declarado vazio aqui de propósito, não esquecido.
+security: []
+
+tags:
+  - name: Status
+    description: Saúde da aplicação e suas dependências
+  - name: Games
+    description: Busca e catalogação de jogos (dados vêm da IGDB)
+
+paths:
+  /status:
+    get:
+      operationId: getStatus
+      tags: [Status]
+      summary: Verifica a saúde da aplicação e do banco de dados
+      responses:
+        '200':
+          description: Aplicação e banco de dados operacionais
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '500':
+          description: Falha ao conectar no banco de dados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /games/search:
+    get:
+      operationId: searchGames
+      tags: [Games]
+      summary: Busca jogos por termo na IGDB
+      description: >
+        Consulta direta à IGDB, sem persistência local — devolve uma lista
+        de jogos candidatos para o usuário escolher antes de criar uma
+        review. Nenhum resultado é salvo no banco por esta chamada.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Termo de busca (2 a 100 caracteres)
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 100
+          example: witcher
+        - name: limit
+          in: query
+          required: false
+          description: Quantidade máxima de resultados (1 a 50, padrão 10)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+          example: 10
+      responses:
+        '200':
+          description: Lista de jogos encontrados (pode ser vazia)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Game'
+        '400':
+          description: Parâmetro `q` ausente/inválido, ou `limit` fora do intervalo 1-50
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+components:
+  schemas:
+    StatusResponse:
+      type: object
+      properties:
+        update_at:
+          type: string
+          format: date-time
+        dependencies:
+          type: object
+          properties:
+            database:
+              type: object
+              properties:
+                version:
+                  type: string
+                  example: "16.0"
+                max_connections:
+                  type: integer
+                  example: 100
+                opened_connections:
+                  type: integer
+                  example: 3
+
+    Platform:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id:
+          type: integer
+          description: ID da plataforma na IGDB
+          example: 6
+        name:
+          type: string
+          example: PC (Microsoft Windows)
+        slug:
+          type: string
+          example: win
+
+    Game:
+      type: object
+      required: [id, name, slug, cover_image_id, first_release_date, platforms]
+      properties:
+        id:
+          type: integer
+          description: ID do jogo na IGDB
+          example: 1942
+        name:
+          type: string
+          example: "The Witcher 3: Wild Hunt"
+        slug:
+          type: string
+          example: the-witcher-3-wild-hunt
+        cover_image_id:
+          type: string
+          nullable: true
+          example: co1wyy
+        first_release_date:
+          type: string
+          format: date
+          nullable: true
+          description: Data de lançamento, formato YYYY-MM-DD
+          example: "2015-05-19"
+        platforms:
+          type: array
+          items:
+            $ref: '#/components/schemas/Platform'
+
+    ErrorResponse:
+      type: object
+      required: [status, message]
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+
+    ValidationErrorResponse:
+      type: object
+      required: [status, message, errors]
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: Validation error
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
