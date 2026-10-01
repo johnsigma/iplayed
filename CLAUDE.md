@@ -79,6 +79,13 @@ tomada antes de começar, e isso é esperado.
 - Vale mesmo quando a lacuna não bloqueia a tarefa atual: o objetivo é não
   deixar buracos se acumularem silenciosamente no backlog
 
+## Padrão de referência
+
+- O projeto deve ser o mais próximo possível de um projeto real, adotando os padrões atuais de mercado (estado da arte) onde fizerem sentido para o escopo — mesmo que nunca haja deploy
+- Toda decisão parte de **quem consome**, mesmo que hipoteticamente (orquestrador, load balancer, CI, pessoa de operação, front-end): desenhar a partir do consumidor, não do que é fácil expor
+- Não manter algo só porque veio de um curso, tutorial ou hábito: se não houver consumidor nem ganho, dizer isso e propor alternativa
+- Ao propor um padrão, distinguir o que é convenção estabelecida do que é preferência ou escolha nossa, e dizer quando não tiver certeza
+
 ## Decisões técnicas
 
 - Nunca apresentar uma escolha como menu cru. Antes de pedir uma decisão, explicar: qual é o problema por trás dela, o que cada alternativa significa na prática (com exemplo de código quando ajudar), e quais argumentos existem a favor de cada uma
