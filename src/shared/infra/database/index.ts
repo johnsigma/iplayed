@@ -21,7 +21,15 @@ expand(
 // partir deste módulo.
 types.setTypeParser(1082, (value: string) => value);
 
+// Por padrão o `pg` espera por uma conexão livre para sempre
+// (connectionTimeoutMillis = 0). Com o pool esgotado, requisições — e as
+// sondas de readiness, que desistem sozinhas em 2s mas continuariam na fila —
+// ficariam penduradas e se acumulariam. Com um limite, quem espera demais
+// falha e sai da fila. Maior que o timeout da readiness de propósito.
+const CONNECTION_TIMEOUT_MS = 5_000;
+
 const pool = new Pool({
+  connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
   user: process.env.POSTGRES_USER,
   host: process.env.POSTGRES_HOST,
   database: process.env.POSTGRES_DB,

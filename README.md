@@ -22,7 +22,7 @@ A ideia é criar um espaço inspirado no modelo do Letterboxd, onde o jogador po
 
 **O que já funciona de verdade, hoje:**
 
-* `GET /api/v1/status` — saúde da aplicação e do banco de dados
+* `GET /health/live` e `GET /health/ready` — sondas de saúde para infraestrutura (liveness e readiness, fora do `/api/v1`)
 * `GET /api/v1/games/search?q=...&limit=...` — busca de jogos direto na IGDB (sem persistência local ainda)
 
 Nada de reviews, notas ou autenticação existe na API ainda — isso é a visão do produto (próxima seção), não o estado atual. Para explorar os endpoints reais, importe [`docs/openapi.yaml`](docs/openapi.yaml) no Bruno, Insomnia ou Postman — o arquivo cresce junto com cada endpoint novo.

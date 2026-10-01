@@ -29,7 +29,7 @@ describe('GET /api/v1/games/search (integração)', () => {
   afterAll(async () => {
     server.close();
     // Este endpoint não faz nenhuma query no banco, mas `app` carrega as
-    // rotas de /status também, que importam o módulo de banco — fechar o
+    // rotas de /health também, que importam o módulo de banco — fechar o
     // pool aqui é o mesmo cuidado de todo teste de integração (ver #49).
     await closeDatabase();
   });

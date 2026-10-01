@@ -6,7 +6,7 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, async () => {
   console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`📡 Endpoint: http://localhost:${PORT}/api/v1/status`);
+  console.log(`📡 Endpoint: http://localhost:${PORT}/health/ready`);
 
   // Feedback de conectividade no boot. Fica aqui, e não no módulo de banco,
   // para que importar o pool não abra conexão por conta própria.

@@ -26,30 +26,61 @@ servers:
 security: []
 
 tags:
-  - name: Status
-    description: Saúde da aplicação e suas dependências
+  - name: Health
+    description: Sondas de saúde para infraestrutura (orquestrador, load balancer, CI) — não são parte da API versionada
   - name: Games
     description: Busca e catalogação de jogos (dados vêm da IGDB)
 
 paths:
-  /status:
+  /health/live:
+    # Fora de /api/v1: quem consome é a infraestrutura, não um cliente da API.
+    servers: &rootServers
+      - url: '{rootUrl}'
+        description: Raiz do servidor (sem o prefixo /api/v1)
+        variables:
+          rootUrl:
+            default: http://localhost:3000
     get:
-      operationId: getStatus
-      tags: [Status]
-      summary: Verifica a saúde da aplicação e do banco de dados
+      operationId: getLiveness
+      tags: [Health]
+      summary: Liveness — o processo está vivo?
+      description: >
+        Consumida pelo orquestrador, que reinicia o processo se falhar. Não
+        consulta nenhuma dependência de propósito: checar o banco aqui faria
+        uma oscilação dele reiniciar a aplicação em loop.
       responses:
         '200':
-          description: Aplicação e banco de dados operacionais
+          description: Processo vivo
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatusResponse'
-        '500':
-          description: Falha ao conectar no banco de dados
+                $ref: '#/components/schemas/HealthResponse'
+
+  /health/ready:
+    servers: *rootServers
+    get:
+      operationId: getReadiness
+      tags: [Health]
+      summary: Readiness — pode receber tráfego agora?
+      description: >
+        Consumida pelo load balancer, que para de mandar requisições se
+        falhar. Checa só dependências fortes (o banco). A IGDB fica de fora
+        de propósito: com ela fora do ar só a busca degrada. O corpo é mínimo
+        porque a rota é pública — detalhes pertencem a um diagnóstico
+        protegido.
+      responses:
+        '200':
+          description: Banco respondendo
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Banco não respondeu ou falhou (detalhe só no log do servidor)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
 
   /games/search:
     get:
@@ -95,30 +126,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorResponse'
+        '503':
+          description: Twitch/IGDB indisponível, lenta ou com resposta inesperada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
-    StatusResponse:
+    HealthResponse:
       type: object
+      required: [status]
       properties:
-        update_at:
+        status:
           type: string
-          format: date-time
-        dependencies:
-          type: object
-          properties:
-            database:
-              type: object
-              properties:
-                version:
-                  type: string
-                  example: "16.0"
-                max_connections:
-                  type: integer
-                  example: 100
-                opened_connections:
-                  type: integer
-                  example: 3
+          enum: [ok, error]
 
     Platform:
       type: object

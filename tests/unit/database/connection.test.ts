@@ -11,24 +11,44 @@ describe('database connection module', () => {
   function mockPg(overrides: {
     connect?: jest.Mock;
     on?: jest.Mock;
-  }): { connect: jest.Mock; on: jest.Mock } {
+  }): { connect: jest.Mock; on: jest.Mock; PoolConstructor: jest.Mock } {
     const connect = overrides.connect ?? jest.fn();
     const on = overrides.on ?? jest.fn();
+    const PoolConstructor = jest.fn().mockImplementation(() => ({
+      connect,
+      on,
+      end: jest.fn(),
+    }));
 
     jest.doMock('pg', () => ({
-      Pool: jest.fn().mockImplementation(() => ({
-        connect,
-        on,
-        end: jest.fn(),
-      })),
+      Pool: PoolConstructor,
       // O módulo registra um parser de tipo para DATE (OID 1082) na
       // inicialização — sem esse mock, o import quebra antes de chegar em
       // qualquer coisa que os testes queiram exercitar.
       types: { setTypeParser: jest.fn() },
     }));
 
-    return { connect, on };
+    return { connect, on, PoolConstructor };
   }
+
+  // O QUE VERIFICA: o pool é criado com um limite de espera por conexão.
+  //
+  // POR QUE FOI CRIADO: achado do code-review da readiness. O `pg` espera
+  // por uma conexão livre para sempre por padrão — com o pool esgotado, as
+  // sondas de /health/ready (que desistem em 2s) continuariam na fila do
+  // pool, e requisições normais ficariam penduradas em vez de falhar.
+  //
+  // O QUE GARANTE: que `connectionTimeoutMillis` está configurado e é maior
+  // que o timeout da readiness (2s), para o limite do pool nunca cortar a
+  // sonda antes dela mesma.
+  it('should create the pool with a connection timeout above the readiness timeout', async () => {
+    const { PoolConstructor } = mockPg({});
+
+    await import('@shared/infra/database');
+
+    const config = PoolConstructor.mock.calls[0][0];
+    expect(config.connectionTimeoutMillis).toBeGreaterThan(2_000);
+  });
 
   // O ponto central da issue #49: importar o módulo não pode abrir conexão.
   // Enquanto isso acontecia, até o teardown dos testes (que importa o pool só
