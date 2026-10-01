@@ -4,7 +4,7 @@
 
 ## Estado atual
 
-- Milestone atual: **2 — Integração de Dados (O Motor IGDB)**, quase concluído (resta só a #51)
+- Milestone atual: **3 — Segurança e Autenticação (O Filtro)** (Milestones 1 e 2 concluídos)
 - Para o estado fino das issues abertas/fechadas, use `gh issue list` — é a fonte da verdade.
 
 **Decisão arquitetural (30/09/2026):** Milestones 3 e 4 foram invertidos. A ordem original tinha Reviews (antigo M3) antes de Autenticação (antigo M4), mas `reviews.user_id` é FK obrigatória para `users` — não daria para criar reviews sem usuários existindo, e sem autenticação não há como saber com segurança qual usuário está postando. Agora: **Milestone 3 = Segurança e Autenticação**, **Milestone 4 = Núcleo do Negócio (Reviews e Ratings)**. Os números das issues não mudaram, só o milestone ao qual pertencem.

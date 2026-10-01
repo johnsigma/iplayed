@@ -8,14 +8,14 @@ A ideia é criar um espaço inspirado no modelo do Letterboxd, onde o jogador po
 
 ## 📍 Estado atual do projeto
 
-> Atualizado em 30/09/2026. `gh issue list` no repositório é sempre a fonte mais fina; isto aqui é o resumo de orientação rápida.
+> Atualizado em 01/10/2026. `gh issue list` no repositório é sempre a fonte mais fina; isto aqui é o resumo de orientação rápida.
 
-**Milestone 2 (Integração com a IGDB) está quase concluída.** A ordem dos milestones seguintes foi revisada: segurança/autenticação vem antes do núcleo de reviews, porque criar uma review exige um usuário autenticado existindo (ver histórico de decisões nas issues do repositório).
+**Milestones 1 e 2 concluídos; o Milestone 3 (autenticação) é o próximo.** A ordem dos milestones seguintes foi revisada: segurança/autenticação vem antes do núcleo de reviews, porque criar uma review exige um usuário autenticado existindo (ver histórico de decisões nas issues do repositório).
 
 | # | Milestone | Status |
 |---|---|---|
 | 1 | Fundação e Infraestrutura | ✅ Concluído |
-| 2 | Integração de Dados (O Motor IGDB) | 🔵 Quase concluído |
+| 2 | Integração de Dados (O Motor IGDB) | ✅ Concluído |
 | 3 | Segurança e Autenticação (O Filtro) | ⬜ Não iniciado |
 | 4 | Núcleo do Negócio (Reviews e Ratings) | ⬜ Não iniciado |
 | 5 | Polimento e Documentação | ⬜ Não iniciado |
