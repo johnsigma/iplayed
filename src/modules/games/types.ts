@@ -3,8 +3,8 @@
 // Date: o parser do driver é configurado para devolver colunas DATE como
 // texto cru (ver src/shared/infra/database/index.ts), evitando a conversão
 // para meia-noite no fuso local que reintroduziria ambiguidade de fuso.
-// `created_at`/`updated_at` continuam Date — são TIMESTAMP, tipo diferente,
-// não afetado por essa configuração (ver issue #51).
+// `created_at`/`updated_at` continuam Date — são TIMESTAMPTZ (issue #51), tipo
+// diferente, não afetado por essa configuração.
 export interface Game {
   id_igdb: number;
   title: string;
